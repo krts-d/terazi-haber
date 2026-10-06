@@ -128,20 +128,22 @@ $json = fn ($v) => json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASH
 file_put_contents("$out/updated.json", $json(['updated' => $store->updatedAt() ?? 0]));
 
 // Search index: every stored headline, newest first, as
-// [outlet, day, time, headline, summary, link, story id or 0].
+// [outlet, day, time, headline, summary, link, story id or 0, unix time];
+// days are short dates ("6 Eki"), stories [gov, ind, opp, outlets, headline].
 $days = [];
 $articles = [];
 foreach ($store->searchRows() as $r) {
     $ts = (int)$r['published_at'];
     $day = date('Y-m-d', $ts);
-    $days[$day] ??= Lang::longDate($ts);
-    $articles[] = [$r['source_id'], $day, date('H:i', $ts), $r['title'], mb_strimwidth($r['summary'], 0, 240, '…'), $r['url'], (int)$r['story_id']];
+    $days[$day] ??= Lang::shortDate($ts);
+    $articles[] = [$r['source_id'], $day, date('H:i', $ts), $r['title'], mb_strimwidth($r['summary'], 0, 240, '…'), $r['url'], (int)$r['story_id'], $ts];
 }
 $stories = [];
 foreach ($store->stories(2, PHP_INT_MAX) as $s) {
-    $stories[(int)$s['id']] = [$s['counts']['gov'], $s['counts']['ind'], $s['counts']['opp'], (int)$s['n_sources']];
+    $stories[(int)$s['id']] = [$s['counts']['gov'], $s['counts']['ind'], $s['counts']['opp'], (int)$s['n_sources'], $s['rep']['title']];
 }
 file_put_contents("$out/search-index.json", $json([
+    'built' => time(),
     'story' => View::link('story', ['id' => 0]) === 'story-0.html' ? 'story-{id}.html' : throw new LogicException('story link pattern changed'),
     'sources' => array_map(fn ($s) => [$s['name'], $s['label']], App::sources()),
     'stories' => (object)$stories,

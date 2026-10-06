@@ -16,6 +16,7 @@ $strings = [
     'one' => Lang::t('search.one'),
     'none' => Lang::t('search.none'),
     'compare' => Lang::t('compare'),
+    'more_in' => Lang::t('search.more_in'),
     'labels' => array_combine(LABELS, array_map(fn ($l) => Lang::t("label.$l"), LABELS)),
 ];
 

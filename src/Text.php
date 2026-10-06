@@ -95,8 +95,10 @@ final class Text
     }
 
     /**
-     * Turkish provinces named in a headline. Two headlines that name different
-     * provinces and none in common ("İstanbul'da kaza" / "Ankara'da kaza") are
+     * Places named in a headline: Turkish provinces (a district counts as its
+     * province) and foreign countries (a city counts as its country). Two
+     * headlines that name different places and none in common ("İstanbul'da
+     * kaza" / "Ankara'da kaza", "Başakşehir'de okul" / "Fransa'da okul") are
      * almost always different events, so the clusterer keeps them apart.
      *
      * @return array<string, true>
@@ -107,8 +109,9 @@ final class Text
         $s = preg_replace("/['’‘`ʼ]\p{L}+/u", '', $s) ?? $s;
         $out = [];
         foreach (preg_split('/[^\p{L}]+/u', $s, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $w) {
-            if (isset(self::PROVINCES[$w])) {
-                $out[self::PROVINCES[$w]] = true;
+            $p = self::PROVINCES[$w] ?? self::DISTRICTS[$w] ?? self::ABROAD[$w] ?? null;
+            if ($p !== null) {
+                $out[$p] = true;
             }
         }
         return $out;
@@ -134,6 +137,60 @@ final class Text
         'usak' => 'usak', 'van' => 'van', 'yalova' => 'yalova', 'yozgat' => 'yozgat', 'zonguldak' => 'zonguldak',
     ];
 
+    /**
+     * Well-known districts, mapped to their province, so "Başakşehir'de" and
+     * "Kahramanmaraş'ta" count as different places. Names that are also
+     * common words, people or clubs (Fatih, Kartal, Beşiktaş, Konak...) are left out.
+     */
+    private const DISTRICTS = [
+        'arnavutkoy' => 'istanbul', 'atasehir' => 'istanbul', 'avcilar' => 'istanbul', 'bagcilar' => 'istanbul',
+        'bahcelievler' => 'istanbul', 'bakirkoy' => 'istanbul', 'basaksehir' => 'istanbul', 'bayrampasa' => 'istanbul',
+        'beykoz' => 'istanbul', 'beylikduzu' => 'istanbul', 'beyoglu' => 'istanbul', 'buyukcekmece' => 'istanbul',
+        'catalca' => 'istanbul', 'cekmekoy' => 'istanbul', 'esenler' => 'istanbul', 'esenyurt' => 'istanbul',
+        'eyupsultan' => 'istanbul', 'gaziosmanpasa' => 'istanbul', 'gungoren' => 'istanbul', 'kadikoy' => 'istanbul',
+        'kagithane' => 'istanbul', 'kucukcekmece' => 'istanbul', 'maltepe' => 'istanbul', 'pendik' => 'istanbul',
+        'sancaktepe' => 'istanbul', 'sariyer' => 'istanbul', 'silivri' => 'istanbul', 'sultanbeyli' => 'istanbul',
+        'sultangazi' => 'istanbul', 'sile' => 'istanbul', 'sisli' => 'istanbul', 'tuzla' => 'istanbul',
+        'umraniye' => 'istanbul', 'uskudar' => 'istanbul', 'zeytinburnu' => 'istanbul',
+        'cankaya' => 'ankara', 'etimesgut' => 'ankara', 'kecioren' => 'ankara', 'mamak' => 'ankara',
+        'pursaklar' => 'ankara', 'sincan' => 'ankara', 'polatli' => 'ankara',
+        'bayrakli' => 'izmir', 'bornova' => 'izmir', 'buca' => 'izmir', 'cigli' => 'izmir', 'karabaglar' => 'izmir',
+        'torbali' => 'izmir', 'alanya' => 'antalya', 'kepez' => 'antalya', 'konyaalti' => 'antalya',
+        'manavgat' => 'antalya', 'muratpasa' => 'antalya', 'bodrum' => 'mugla', 'datca' => 'mugla',
+        'fethiye' => 'mugla', 'marmaris' => 'mugla', 'milas' => 'mugla', 'gemlik' => 'bursa', 'inegol' => 'bursa',
+        'mudanya' => 'bursa', 'darica' => 'kocaeli', 'gebze' => 'kocaeli', 'golcuk' => 'kocaeli', 'izmit' => 'kocaeli',
+        'antakya' => 'hatay', 'iskenderun' => 'hatay', 'mezitli' => 'mersin', 'tarsus' => 'mersin',
+        'adapazari' => 'sakarya', 'soma' => 'manisa', 'akhisar' => 'manisa', 'siverek' => 'sanliurfa',
+        'nizip' => 'gaziantep', 'sahinbey' => 'gaziantep', 'sehitkamil' => 'gaziantep', 'elbistan' => 'kahramanmaras',
+    ];
+
+    /**
+     * Countries, their adjectives and big foreign cities, mapped to the country,
+     * so "Fransa'da okul" and "İstanbul'da okul" are kept apart. Türkiye itself
+     * is left out: it appears in headlines about any province. Two sides of one
+     * war count as one place ("İsrail'in katlettiği" / "Gazze'de"), since their
+     * news names either one.
+     */
+    private const ABROAD = [
+        'abd' => 'abd', 'amerika' => 'abd', 'amerikan' => 'abd', 'washington' => 'abd', 'newyork' => 'abd',
+        'almanya' => 'almanya', 'alman' => 'almanya', 'berlin' => 'almanya', 'avusturya' => 'avusturya', 'viyana' => 'avusturya',
+        'azerbaycan' => 'azerbaycan', 'baku' => 'azerbaycan', 'belcika' => 'belcika', 'bruksel' => 'belcika',
+        'bulgaristan' => 'bulgaristan', 'cin' => 'cin', 'pekin' => 'cin', 'ermenistan' => 'ermenistan', 'erivan' => 'ermenistan',
+        'fransa' => 'fransa', 'fransiz' => 'fransa', 'paris' => 'fransa', 'marsilya' => 'fransa', 'lyon' => 'fransa',
+        'filistin' => 'israil-filistin', 'gazze' => 'israil-filistin', 'filistinli' => 'israil-filistin',
+        'gurcistan' => 'gurcistan', 'tiflis' => 'gurcistan', 'hindistan' => 'hindistan', 'hollanda' => 'hollanda', 'amsterdam' => 'hollanda',
+        'ingiltere' => 'ingiltere', 'ingiliz' => 'ingiltere', 'londra' => 'ingiltere', 'irak' => 'irak', 'bagdat' => 'irak', 'erbil' => 'irak',
+        'iran' => 'iran', 'tahran' => 'iran', 'israil' => 'israil-filistin', 'israilli' => 'israil-filistin', 'telaviv' => 'israil-filistin',
+        'ispanya' => 'ispanya', 'madrid' => 'ispanya', 'barselona' => 'ispanya', 'isvec' => 'isvec', 'isvicre' => 'isvicre', 'cenevre' => 'isvicre',
+        'italya' => 'italya', 'italyan' => 'italya', 'japonya' => 'japonya', 'tokyo' => 'japonya',
+        'kanada' => 'kanada', 'katar' => 'katar', 'doha' => 'katar', 'kibris' => 'kibris', 'kktc' => 'kibris', 'lefkosa' => 'kibris',
+        'lubnan' => 'lubnan', 'beyrut' => 'lubnan', 'libya' => 'libya', 'macaristan' => 'macaristan', 'misir' => 'misir', 'kahire' => 'misir',
+        'pakistan' => 'pakistan', 'polonya' => 'polonya', 'romanya' => 'romanya', 'rusya' => 'rusya-ukrayna', 'rus' => 'rusya-ukrayna', 'moskova' => 'rusya-ukrayna',
+        'suriye' => 'suriye', 'suriyeli' => 'suriye', 'halep' => 'suriye', 'sudan' => 'sudan', 'suudi' => 'suudi', 'riyad' => 'suudi',
+        'ukrayna' => 'rusya-ukrayna', 'kiev' => 'rusya-ukrayna', 'yunanistan' => 'yunanistan', 'yunan' => 'yunanistan', 'atina' => 'yunanistan',
+        'venezuela' => 'venezuela', 'meksika' => 'meksika', 'brezilya' => 'brezilya', 'arjantin' => 'arjantin',
+    ];
+
     /** Stems of generic news verbs ("açıklandı", "sürüyor", "devam ediyor"...) that say nothing about the event. */
     private const STOP_STEMS = [
         'acikl' => 1, 'devam' => 1, 'ediyo' => 1, 'edild' => 1, 'edile' => 1, 'yapil' => 1, 'yapti' => 1,
@@ -146,6 +203,8 @@ final class Text
         'girdi' => 1, 'suphe' => 1, 'yakal' => 1, 'yasin' => 1, 'degis' => 1, 'feci' => 1, 'yaral' => 1,
         'meyda' => 1, 'tespi' => 1, 'ortay' => 1, 'duyur' => 1, 'tepki' => 1, 'iddia' => 1, 'mesaj' => 1,
         'uyard' => 1, 'uyari' => 1, 'kriti' => 1, 'carpi' => 1, 'dakik' => 1, 'gelis' => 1, 'sert' => 1,
+        // Court and TV-listing boilerplate that links unrelated stories ("adliyeye sevk edildi", "hangi kanalda, saat kaçta").
+        'adliy' => 1, 'sevk' => 1, 'kanal' => 1, 'saat' => 1, 'kacta' => 1, 'hangi' => 1,
     ];
 
     /** Stopwords, already folded (no Turkish diacritics). */

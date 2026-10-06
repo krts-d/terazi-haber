@@ -69,3 +69,63 @@
   setInterval(check, 120000);
   document.addEventListener('visibilitychange', check);
 })();
+
+/* Story page on phones, where the three sides are stacked: each side's
+   heading opens and closes its column. They start closed so all three
+   headings (with their counts) fit on the screen; the bar of sides above
+   them opens the one it jumps to. Wide screens always show every column. */
+(() => {
+  const cols = [...document.querySelectorAll('.compare .col')];
+  if (!cols.length) return;
+  const phone = matchMedia('(max-width: 899px)');
+  const toggles = new Map();
+  for (const col of cols) {
+    const h = col.querySelector('.col-h');
+    const body = col.querySelector('.col-body');
+    if (!h || !body) continue;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'col-toggle';
+    btn.setAttribute('aria-controls', body.id);
+    btn.append(...h.childNodes);
+    h.append(btn);
+    const set = (open) => {
+      col.classList.toggle('is-closed', !open);
+      btn.setAttribute('aria-expanded', String(open));
+    };
+    btn.addEventListener('click', () => set(col.classList.contains('is-closed')));
+    toggles.set(h.id, set);
+  }
+  const fit = () => {
+    for (const [id, set] of toggles) set(!phone.matches || location.hash === '#' + id);
+    for (const h of document.querySelectorAll('.col-toggle')) h.disabled = !phone.matches;
+  };
+  fit();
+  phone.addEventListener('change', fit);
+  for (const a of document.querySelectorAll('.side-jump a')) {
+    a.addEventListener('click', () => toggles.get(a.hash.slice(1))?.(true));
+  }
+})();
+
+/* Phones: the menu button opens and closes the links under the name. */
+(() => {
+  const btn = document.querySelector('.menu-btn');
+  const menu = document.getElementById('menu');
+  if (!btn || !menu) return;
+  btn.setAttribute('role', 'button');
+  const set = (open) => {
+    menu.classList.toggle('is-open', open);
+    btn.setAttribute('aria-expanded', String(open));
+  };
+  set(false);
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    set(!menu.classList.contains('is-open'));
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && menu.classList.contains('is-open')) {
+      set(false);
+      btn.focus();
+    }
+  });
+})();

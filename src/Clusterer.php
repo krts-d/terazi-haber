@@ -9,12 +9,14 @@ namespace Terazi;
  * Each article becomes a TF-IDF vector of stemmed words (headline words count
  * double). Articles are visited oldest first. An article joins the most
  * similar existing story when all of these hold:
- *   - similarity ≥ threshold, where similarity is the better of
- *     (a) cosine to the story's centroid and (b) cosine to its closest member;
+ *   - cosine similarity to the story's centroid ≥ threshold (the story as a
+ *     whole, not its closest member: matching any one member let stories chain
+ *     through shared boilerplate, e.g. "adliyeye sevk edildi");
  *   - it shares at least one headline word with the story's headlines and
  *     at least `minShared` words overall;
  *   - the story had an article within the last `maxGap` seconds;
- *   - the two don't name different provinces ("İstanbul'da kaza" vs "Ankara'da kaza").
+ *   - the two don't name different places ("İstanbul'da kaza" vs "Ankara'da kaza",
+ *     "Başakşehir'de okul" vs "Fransa'da okul"; see Text::places).
  * Otherwise it starts a new story.
  */
 final class Clusterer
@@ -71,39 +73,29 @@ final class Clusterer
             $vecs[$i] = $vec;
         }
 
-        // 3. Greedy single pass. Inverted indexes over story centroids and over
-        //    already-placed articles keep this fast for thousands of articles.
+        // 3. Greedy single pass. An inverted index over story centroids keeps
+        //    this fast for thousands of articles.
         $centroid = [];   // story => [term => weight sum]
         $cnorm2 = [];     // story => squared norm of centroid
         $titles = [];     // story => [term => true]   (headline words)
         $words = [];      // story => [term => true]   (all words)
-        $places = [];     // story => [province => true]
+        $places = [];     // story => [place => true]
         $last = [];       // story => newest published_at
         $members = [];    // story => list of article indexes
         $cIndex = [];     // term => [story => true]
-        $aIndex = [];     // term => [article index => true]
-        $storyOf = [];    // article index => story
 
         foreach ($articles as $i => $a) {
             $vec = $vecs[$i];
 
             $cDots = [];
-            $aDots = [];
             foreach ($vec as $w => $v) {
                 foreach ($cIndex[$w] ?? [] as $c => $_) {
                     $cDots[$c] = ($cDots[$c] ?? 0.0) + $v * $centroid[$c][$w];
-                }
-                foreach ($aIndex[$w] ?? [] as $j => $_) {
-                    $aDots[$j] = ($aDots[$j] ?? 0.0) + $v * $vecs[$j][$w];
                 }
             }
             $sims = [];
             foreach ($cDots as $c => $dot) {
                 $sims[$c] = $cnorm2[$c] > 0 ? $dot / sqrt($cnorm2[$c]) : 0.0;
-            }
-            foreach ($aDots as $j => $dot) {
-                $c = $storyOf[$j];
-                $sims[$c] = max($sims[$c] ?? 0.0, $dot);
             }
             arsort($sims);
 
@@ -144,14 +136,12 @@ final class Clusterer
                 $centroid[$best][$w] = $old + $v;
                 $cnorm2[$best] += ($old + $v) ** 2 - $old ** 2;
                 $cIndex[$w][$best] = true;
-                $aIndex[$w][$i] = true;
                 $words[$best][$w] = true;
             }
             $titles[$best] += $titleSets[$i];
             $places[$best] += $placeSets[$i];
             $last[$best] = max($last[$best], $a['published_at']);
             $members[$best][] = $i;
-            $storyOf[$i] = $best;
         }
 
         // 4. Representative headline: the article closest to the story's centroid.

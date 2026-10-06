@@ -49,10 +49,17 @@ V::header($rep['title'], '', $store);
   </header>
 
 
+  <?php /* Phones stack the three sides, so this bar (hidden on wide screens) jumps between them. */ ?>
+  <nav class="side-jump" aria-label="<?= V::t('story.sides') ?>">
+    <?php foreach (LABELS as $l): ?>
+    <a class="cc<?= $sides[$l] ? '' : ' is-zero' ?>" href="#col-<?= $l ?>"><?= V::swatch($l) ?><?= V::t("label.$l.short") ?> <b><?= count($sides[$l]) ?></b></a>
+    <?php endforeach; ?>
+  </nav>
   <div class="compare">
     <?php foreach (LABELS as $l): ?>
     <section class="col col-<?= $l ?>" aria-labelledby="col-<?= $l ?>">
       <h2 class="col-h" id="col-<?= $l ?>"><?= V::swatch($l) ?><?= V::t("label.$l") ?> <span class="col-n"><?= count($sides[$l]) ?></span></h2>
+      <div class="col-body" id="col-body-<?= $l ?>">
       <?php if (!$sides[$l]): ?>
         <p class="col-none"><?= V::t('story.none') ?></p>
       <?php endif; ?>
@@ -73,6 +80,7 @@ V::header($rep['title'], '', $store);
       <?php if ($missing[$l]): ?>
         <p class="col-missing"><span><?= V::t('story.notyet') ?></span> <?= V::e(implode(', ', $missing[$l])) ?></p>
       <?php endif; ?>
+      </div>
     </section>
     <?php endforeach; ?>
   </div>

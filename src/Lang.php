@@ -15,6 +15,7 @@ final class Lang
             'label.ind.short' => 'Indep.',
             'label.opp.short' => 'Pro-opp.',
             'nav.front' => 'Front page',
+            'nav.menu' => 'Menu',
             'nav.news' => 'Latest news',
             'nav.recap' => 'Daily recap',
             'random' => 'Random story',
@@ -65,6 +66,7 @@ final class Lang
             'story.latest' => 'latest %s',
             'story.none' => 'No coverage',
             'story.notyet' => 'No matching article from:',
+            'story.sides' => 'Jump to a side',
             'scale.caption' => 'The beam tips toward the side with more outlets covering the story.',
             'sources.title' => 'Outlets and labels',
             'sources.intro' => 'Each outlet carries one of three labels, with a short note on why: who owns it and what its editorial line is. Labels are a starting point, not a verdict; ownership and editorial lines change often. Notes last checked in October 2026.',
@@ -100,6 +102,7 @@ final class Lang
             'search.loading' => 'Loading the headlines…',
             'search.failed' => 'The headlines couldn\'t be loaded. Reload the page to try again.',
             'search.more' => 'Show more',
+            'search.more_in' => '+%d more matching headlines in this story',
             'news.more_in_search' => 'Older headlines are not listed here, but search finds them.',
             'random.going' => 'Opening a random story…',
             'random.none' => 'No story has been covered by more than one outlet today yet.',
@@ -169,6 +172,7 @@ final class Lang
             'label.ind.short' => 'Bağımsız',
             'label.opp.short' => 'Muhalefet',
             'nav.front' => 'Ana sayfa',
+            'nav.menu' => 'Menü',
             'nav.news' => 'Son haberler',
             'nav.recap' => 'Günün özeti',
             'random' => 'Rastgele haber',
@@ -219,6 +223,7 @@ final class Lang
             'story.latest' => 'son %s',
             'story.none' => 'Haber yok',
             'story.notyet' => 'Eşleşen haberi olmayanlar:',
+            'story.sides' => 'Tarafa git',
             'scale.caption' => 'Terazi, haberi daha çok yayının işlediği tarafa eğilir.',
             'sources.title' => 'Yayın organları ve etiketler',
             'sources.intro' => 'Her yayın üç etiketten birini ve nedenini anlatan kısa bir notu taşır: sahibi kim, yayın çizgisi ne. Etiketler kesin hüküm değil, bir başlangıç noktasıdır; sahiplik ve yayın çizgileri sık değişir. Notlar en son Ekim 2026\'da kontrol edildi.',
@@ -254,6 +259,7 @@ final class Lang
             'search.loading' => 'Başlıklar yükleniyor…',
             'search.failed' => 'Başlıklar yüklenemedi. Yeniden denemek için sayfayı yenileyin.',
             'search.more' => 'Daha fazla göster',
+            'search.more_in' => 'Bu olayda eşleşen %d haber daha',
             'news.more_in_search' => 'Daha eski başlıklar burada listelenmez, ama arama onları da bulur.',
             'random.going' => 'Rastgele bir habere gidiliyor…',
             'random.none' => 'Bugün henüz birden fazla yayında çıkan bir haber yok.',
@@ -348,11 +354,16 @@ final class Lang
             : "$d, " . date('j', $ts) . " $m " . date('Y', $ts);
     }
 
+    /** "5 Oct" */
+    public static function shortDate(int $ts): string
+    {
+        return date('j', $ts) . ' ' . mb_substr(self::MONTHS[self::lang()][(int)date('n', $ts) - 1], 0, 3);
+    }
+
     /** "5 Oct, 14:20" */
     public static function shortDateTime(int $ts): string
     {
-        $m = mb_substr(self::MONTHS[self::lang()][(int)date('n', $ts) - 1], 0, 3);
-        return date('j', $ts) . " $m, " . date('H:i', $ts);
+        return self::shortDate($ts) . ', ' . date('H:i', $ts);
     }
 
     public static function ago(int $ts, ?int $now = null): string

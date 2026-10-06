@@ -288,7 +288,12 @@ final class View
     </div>
     <a class="nameplate" href="<?= self::e(self::link('front')) ?>"><?= self::e($site) ?></a>
     <p class="tagline"><?= self::t('tagline') ?></p>
-    <nav class="sections" aria-label="Sections">
+    <?php /* Phones: the links fold into a menu behind these buttons. Without JavaScript, #menu opens it (CSS :target). */ ?>
+    <div class="phone-tools">
+      <a class="tool" href="<?= self::e(self::link('search')) ?>" aria-label="<?= self::t('search.title') ?>"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></a>
+      <a class="tool menu-btn" href="#menu" aria-controls="menu" aria-label="<?= self::t('nav.menu') ?>"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></a>
+    </div>
+    <nav class="sections" id="menu" aria-label="Sections">
       <?= $nav('front', 'nav.front') ?>
       <?= $nav('news', 'nav.news') ?>
       <?= $nav('recap', 'nav.recap') ?>
