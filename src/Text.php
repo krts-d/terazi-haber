@@ -95,11 +95,13 @@ final class Text
     }
 
     /**
-     * Places named in a headline: Turkish provinces (a district counts as its
-     * province) and foreign countries (a city counts as its country). Two
-     * headlines that name different places and none in common ("İstanbul'da
-     * kaza" / "Ankara'da kaza", "Başakşehir'de okul" / "Fransa'da okul") are
-     * almost always different events, so the clusterer keeps them apart.
+     * Places named in a headline: Turkish provinces and foreign countries (a
+     * city counts as its country). A district counts as its province and also
+     * as itself, keyed "province/district". Two headlines that name different
+     * places and none in common ("İstanbul'da kaza" / "Ankara'da kaza",
+     * "Başakşehir'de okul" / "Fransa'da okul", "Başakşehir'de okul" /
+     * "Esenyurt'ta okul") are almost always different events, so the clusterer
+     * keeps them apart; see placesClash.
      *
      * @return array<string, true>
      */
@@ -109,12 +111,41 @@ final class Text
         $s = preg_replace("/['’‘`ʼ]\p{L}+/u", '', $s) ?? $s;
         $out = [];
         foreach (preg_split('/[^\p{L}]+/u', $s, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $w) {
-            $p = self::PROVINCES[$w] ?? self::DISTRICTS[$w] ?? self::ABROAD[$w] ?? null;
+            if (isset(self::DISTRICTS[$w])) {
+                $out[self::DISTRICTS[$w]] = true;
+                $out[self::DISTRICTS[$w] . '/' . $w] = true;
+                continue;
+            }
+            $p = self::PROVINCES[$w] ?? self::ABROAD[$w] ?? null;
             if ($p !== null) {
                 $out[$p] = true;
             }
         }
         return $out;
+    }
+
+    /**
+     * Whether two sets from places() name different places: no province or
+     * country in common, or both name districts and none in common. A headline
+     * naming only the province ("İstanbul'da") fits any of its districts.
+     *
+     * @param array<string, true> $a
+     * @param array<string, true> $b
+     */
+    public static function placesClash(array $a, array $b): bool
+    {
+        if (!$a || !$b) {
+            return false;
+        }
+        $isDistrict = fn (string $k): bool => str_contains($k, '/');
+        $top = fn (array $s): array => array_filter($s, fn ($k) => !$isDistrict($k), ARRAY_FILTER_USE_KEY);
+        $dist = fn (array $s): array => array_filter($s, $isDistrict, ARRAY_FILTER_USE_KEY);
+        if (!array_intersect_key($top($a), $top($b))) {
+            return true;
+        }
+        $da = $dist($a);
+        $db = $dist($b);
+        return $da && $db && !array_intersect_key($da, $db);
     }
 
     private const PROVINCES = [
@@ -139,7 +170,8 @@ final class Text
 
     /**
      * Well-known districts, mapped to their province, so "Başakşehir'de" and
-     * "Kahramanmaraş'ta" count as different places. Names that are also
+     * "Kahramanmaraş'ta" count as different places (and so do "Başakşehir'de"
+     * and "Esenyurt'ta"). Names that are also
      * common words, people or clubs (Fatih, Kartal, Beşiktaş, Konak...) are left out.
      */
     private const DISTRICTS = [

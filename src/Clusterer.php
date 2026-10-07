@@ -16,7 +16,8 @@ namespace Terazi;
  *     at least `minShared` words overall;
  *   - the story had an article within the last `maxGap` seconds;
  *   - the two don't name different places ("İstanbul'da kaza" vs "Ankara'da kaza",
- *     "Başakşehir'de okul" vs "Fransa'da okul"; see Text::places).
+ *     "Başakşehir'de okul" vs "Fransa'da okul" or "Esenyurt'ta okul"; see
+ *     Text::placesClash).
  * Otherwise it starts a new story.
  */
 final class Clusterer
@@ -107,7 +108,7 @@ final class Clusterer
                 if ($a['published_at'] - $last[$c] > $maxGapSeconds) {
                     continue;
                 }
-                if ($placeSets[$i] && $places[$c] && !array_intersect_key($placeSets[$i], $places[$c])) {
+                if (Text::placesClash($placeSets[$i], $places[$c])) {
                     continue;
                 }
                 if (!array_intersect_key($titleSets[$i], $titles[$c])) {
